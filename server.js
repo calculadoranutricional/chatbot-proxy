@@ -1,69 +1,52 @@
 import express from "express";
 import fetch from "node-fetch";
-import cors from "cors";
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
-// 🔐 Token de Hugging Face (lo configurás como variable HF_API_KEY en Render)
+const PORT = process.env.PORT || 10000;
 const HF_API_KEY = process.env.HF_API_KEY;
 
-// 🚀 Ruta del proxy
+// Ruta principal (solo para probar que el servidor corre)
+app.get("/", (req, res) => {
+  res.send("🚀 Proxy Hugging Face activo y listo!");
+});
+
+// Ruta de chat
 app.post("/chat", async (req, res) => {
+  const { inputs } = req.body;
+  if (!inputs) {
+    return res.status(400).json({ error: "Falta el parámetro 'inputs'" });
+  }
+
   try {
-    const { inputs } = req.body;
+    // Usamos el modelo GPT-2 de Hugging Face (confirmado que funciona)
+    const response = await fetch("https://api-inference.huggingface.co/models/gpt2", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${HF_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ inputs }),
+    });
 
-    if (!inputs) {
-      return res.status(400).json({ error: "Falta el campo 'inputs' en la solicitud." });
-    }
+    const data = await response.json();
 
-    // 🔗 Modelo accesible públicamente (funciona con router.huggingface.co)
-    const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: `Usuario: ${inputs}\nAsistente:`,
-        }),
-      }
-    );
-
-    const text = await response.text();
-
-    // Si Hugging Face devuelve error (por ejemplo 404 o 401)
     if (!response.ok) {
       return res.status(response.status).json({
         error: "Error desde Hugging Face",
         status: response.status,
-        details: { raw_text: text },
+        details: data,
       });
     }
 
-    // Intentamos parsear el JSON del modelo
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = [{ generated_text: text }];
-    }
-
     res.json(data);
-  } catch (err) {
-    console.error("❌ Error en el servidor proxy:", err);
-    res.status(500).json({ error: "Error en el servidor proxy", details: err.message });
+  } catch (error) {
+    console.error("Error al comunicarse con Hugging Face:", error);
+    res.status(500).json({ error: "Error interno del servidor", details: error.message });
   }
 });
 
-// Ruta raíz para verificar que el servidor corre
-app.get("/", (req, res) => {
-  res.send("✅ Servidor proxy activo. Usa POST /chat para enviar mensajes.");
+app.listen(PORT, () => {
+  console.log(`✅ Servidor proxy escuchando en puerto ${PORT}`);
 });
-
-// Puerto dinámico para Render
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Servidor proxy escuchando en puerto ${PORT}`));
