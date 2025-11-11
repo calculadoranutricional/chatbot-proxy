@@ -1,7 +1,7 @@
 {
   "name": "chatbot-proxy",
   "version": "1.0.0",
-  "description": "Proxy Node.js para conectar un chatbot HTML con la API de Hugging Face (modelo Gemma 2B)",
+  "description": "Proxy Node.js para conectar un chatbot HTML con el modelo GPT-2 de Hugging Face",
   "main": "server.js",
   "type": "module",
   "scripts": {
