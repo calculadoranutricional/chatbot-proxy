@@ -7,21 +7,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Token de Hugging Face (configurado en Render)
+// Tu token de Hugging Face (configurado en Render)
 const HF_API_KEY = process.env.HF_API_KEY;
 
-// Ruta principal opcional (para evitar "Not Found" en navegador)
+// ✅ Ruta raíz opcional para verificar que el servidor está corriendo
 app.get("/", (req, res) => {
-  res.send("✅ Servidor proxy activo. Usa POST /chat para interactuar con el modelo.");
+  res.send("✅ Servidor proxy para Hugging Face activo. Usa POST /chat");
 });
 
-// Ruta del proxy
+// ✅ Ruta del proxy (POST)
 app.post("/chat", async (req, res) => {
   try {
     const { inputs } = req.body;
+    if (!inputs) return res.status(400).json({ error: "Falta el campo 'inputs'." });
 
     const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2",
+      "https://router.huggingface.co/hf-inference/models/google/gemma-2b-it",
       {
         method: "POST",
         headers: {
@@ -29,14 +30,15 @@ app.post("/chat", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: `Usuario: ${inputs}\nAsistente:`,
+          inputs: inputs,
+          parameters: { max_new_tokens: 200 },
         }),
       }
     );
 
-    // Si Hugging Face responde con texto plano o JSON
     const text = await response.text();
     let data;
+
     try {
       data = JSON.parse(text);
     } catch {
