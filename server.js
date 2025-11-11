@@ -10,7 +10,7 @@ app.use(express.json());
 const HF_API_KEY = process.env.HF_API_KEY;
 
 // 🧠 Modelo público y funcional
-const HF_URL = "https://router.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
+const HF_URL = "https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta";
 
 // Ruta base para probar el proxy
 app.get("/", (req, res) => {
