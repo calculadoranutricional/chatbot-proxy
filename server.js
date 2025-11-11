@@ -7,38 +7,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Tu token de Hugging Face (configurado en Render)
+// ✅ Token de Hugging Face (lo configurás en Render)
 const HF_API_KEY = process.env.HF_API_KEY;
 
-// ✅ Ruta raíz opcional para verificar que el servidor está corriendo
-app.get("/", (req, res) => {
-  res.send("✅ Servidor proxy para Hugging Face activo. Usa POST /chat");
-});
+// 🧠 Ruta del modelo Gemma 2B
+const MODEL_URL = "https://router.huggingface.co/hf-inference/models/google/gemma-2-2b-it";
 
-// ✅ Ruta del proxy (POST)
+// ✅ Endpoint principal del proxy
 app.post("/chat", async (req, res) => {
   try {
     const { inputs } = req.body;
-    if (!inputs) return res.status(400).json({ error: "Falta el campo 'inputs'." });
 
-    const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/google/gemma-2b-it",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: inputs,
-          parameters: { max_new_tokens: 200 },
-        }),
-      }
-    );
+    const response = await fetch(MODEL_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${HF_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        inputs: `Usuario: ${inputs}\nAsistente:`,
+      }),
+    });
 
     const text = await response.text();
     let data;
 
+    // Si Hugging Face devuelve texto en lugar de JSON, lo manejamos igual
     try {
       data = JSON.parse(text);
     } catch {
@@ -52,6 +46,11 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+// ✅ Ruta base opcional (para verificar que el servidor corre)
+app.get("/", (req, res) => {
+  res.send("✅ Servidor proxy activo — modelo Gemma 2B listo para usar.");
+});
+
 // Puerto dinámico para Render
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Servidor proxy escuchando en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor proxy escuchando en puerto ${PORT}`));
