@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Token de Hugging Face (lo configurás en Render)
+// Token de Hugging Face (se configura en Render como variable de entorno)
 const HF_API_KEY = process.env.HF_API_KEY;
 
 // Ruta del proxy
@@ -16,7 +16,7 @@ app.post("/chat", async (req, res) => {
     const { inputs } = req.body;
 
     const response = await fetch(
-      "https://router.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
       {
         method: "POST",
         headers: {
@@ -29,7 +29,7 @@ app.post("/chat", async (req, res) => {
       }
     );
 
-    // Algunos modelos responden con streaming o texto plano, manejamos ambos casos
+    // Algunos modelos responden con texto plano o JSON
     const text = await response.text();
     let data;
     try {
@@ -41,10 +41,15 @@ app.post("/chat", async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error("❌ Error en el servidor proxy:", err);
-    res.status(500).json({ error: "Error en el servidor proxy", details: err.message });
+    res.status(500).json({
+      error: "Error en el servidor proxy",
+      details: err.message,
+    });
   }
 });
 
-// Puerto dinámico para Render
+// Puerto dinámico (Render asigna PORT automáticamente)
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Servidor proxy escuchando en puerto ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`✅ Servidor proxy escuchando en puerto ${PORT}`)
+);
